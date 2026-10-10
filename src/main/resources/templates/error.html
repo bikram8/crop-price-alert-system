@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Error')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('')}"></header>
+<main class="wrap">
+    <h1 th:text="${status == 404} ? 'Page not found' : 'Something went wrong'">Error</h1>
+    <p class="sub" th:text="${message != null and !#strings.isEmpty(message)} ? ${message} : ${error}"></p>
+    <a class="btn" th:href="@{/}">Back to prices</a>
+</main>
+</body>
+</html>

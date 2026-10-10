@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head(${farmer.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('farmers')}"></header>
+
+<main class="wrap">
+    <p><a th:href="@{/farmers}">&larr; All farmers</a></p>
+    <h1 th:text="${farmer.name}">Farmer</h1>
+    <p class="sub">
+        <span th:text="${farmer.maskedPhone}"></span> ·
+        <span th:text="${farmer.village.label}"></span> ·
+        SMS in <span th:text="${farmer.language.label}"></span>
+    </p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="cols">
+        <section>
+            <h2 style="margin-top:0">Price alerts</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Alert</th><th>Status</th><th>Last sent for</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="a : ${farmer.alerts}">
+                        <td th:text="${a.describe()}">Tomato above</td>
+                        <td><span class="tag" th:classappend="${a.active} ? 'on' : 'off'" th:text="${a.active} ? 'active' : 'paused'"></span></td>
+                        <td th:text="${a.lastTriggeredFor == null ? '-' : #temporals.format(a.lastTriggeredFor, 'd MMM')}">-</td>
+                        <td style="white-space:nowrap">
+                            <form method="post" th:action="@{/farmers/{id}/alerts/{a}/toggle(id=${farmer.id}, a=${a.id})}" style="display:inline">
+                                <button class="btn-small btn-plain" type="submit" th:text="${a.active} ? 'Pause' : 'Resume'">Pause</button>
+                            </form>
+                            <form method="post" th:action="@{/farmers/{id}/alerts/{a}/delete(id=${farmer.id}, a=${a.id})}" style="display:inline">
+                                <button class="btn-small btn-danger" type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${farmer.alerts.isEmpty()}">
+                        <td colspan="4" class="muted">No alerts yet.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Messages sent to this farmer</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th style="width:130px">When</th><th>Message</th></tr></thead>
+                    <tbody>
+                    <tr th:each="n : ${notifications}">
+                        <td th:text="${#temporals.format(n.createdAt, 'd MMM, HH:mm')}"></td>
+                        <td><span class="sms" th:text="${n.message}"></span></td>
+                    </tr>
+                    <tr th:if="${notifications.isEmpty()}">
+                        <td colspan="2" class="muted">Nothing sent yet.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="panel">
+            <h2 style="margin-top:0">New alert</h2>
+            <form method="post" th:action="@{/farmers/{id}/alerts(id=${farmer.id})}" th:object="${alertForm}">
+                <p class="field">
+                    <label for="commodityId">Crop</label>
+                    <select id="commodityId" th:field="*{commodityId}">
+                        <option value="">Choose crop</option>
+                        <option th:each="c : ${commodities}" th:value="${c.id}" th:text="${c.displayName}"></option>
+                    </select>
+                    <span class="err" th:if="${#fields.hasErrors('commodityId')}" th:errors="*{commodityId}"></span>
+                </p>
+                <p class="field">
+                    <label for="condition">When the price</label>
+                    <select id="condition" th:field="*{condition}">
+                        <option th:each="c : ${conditions}" th:value="${c}" th:text="${c.phrase}"></option>
+                    </select>
+                </p>
+                <p class="field">
+                    <label for="threshold">₹ per quintal</label>
+                    <input id="threshold" type="number" th:field="*{threshold}">
+                    <span class="err" th:if="${#fields.hasErrors('threshold')}" th:errors="*{threshold}"></span>
+                </p>
+                <p class="field">
+                    <label for="radiusKm">in any mandi within (km)</label>
+                    <input id="radiusKm" type="number" th:field="*{radiusKm}">
+                    <span class="err" th:if="${#fields.hasErrors('radiusKm')}" th:errors="*{radiusKm}"></span>
+                </p>
+                <button type="submit">Save alert</button>
+            </form>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

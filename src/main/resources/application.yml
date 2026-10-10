@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: mandiwatch
+
+  # File-based H2 so registered farmers and imported prices survive a restart.
+  # Delete the ./data folder to start fresh (sample data loads again).
+  datasource:
+    url: jdbc:h2:file:./data/mandiwatch;AUTO_SERVER=TRUE
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    # Off on purpose: the database session closes when the service method returns.
+    # Anything a page needs is loaded up front (join fetch / @EntityGraph), so a
+    # template can never trigger hidden lazy-loading queries.
+    open-in-view: false
+    properties:
+      hibernate:
+        # Batching only works for entities whose id comes from a sequence (see DailyPrice).
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  messages:
+    basename: messages
+    fallback-to-system-locale: false
+
+  # Java 21: Tomcat request threads and @Scheduled tasks run on virtual threads.
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: 8080
+  servlet:
+    session:
+      tracking-modes: cookie
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # full details (db, disk, lastImport) only for the logged-in admin
+      show-details: when-authorized
+      roles: ADMIN
+
+mandi:
+  api:
+    # "Current Daily Price of Various Commodities from Various Markets (Mandi)" on data.gov.in
+    base-url: https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070
+    # Free key from data.gov.in -> My Account. Never commit a real key; use the env variable.
+    key: ${DATA_GOV_IN_KEY:}
+    state: Telangana
+    # If the API ignores the state filter, try filters[state] instead
+    state-filter-param: filters[state.keyword]
+    page-size: 1000
+    max-pages: 30
+    scheduled: false
+    cron: "0 30 19 * * *"
+    # Without these a hung connection would block the import thread forever.
+    connect-timeout: 5s
+    read-timeout: 30s
+  transport:
+    rate-per-km-per-quintal: 1.0
+    road-factor: 1.3
+    hamali-per-quintal: 30
+    freshness-days: 3
+  sample:
+    enabled: true
+    days: 60
+  admin:
+    username: ${MANDI_ADMIN_USER:admin}
+    # Dev default only. Set MANDI_ADMIN_PASSWORD anywhere the app is reachable by others.
+    password: ${MANDI_ADMIN_PASSWORD:admin123}
+
+logging:
+  level:
+    com.mandiwatch: INFO

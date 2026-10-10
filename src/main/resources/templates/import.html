@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Import data')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('import')}"></header>
+
+<main class="wrap">
+    <h1>Import price data</h1>
+    <p class="sub">Every row is cleaned before saving: crop names are unified, bad dates and impossible prices are skipped,
+        and re-importing the same day updates rows instead of duplicating them.</p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="cols">
+        <section>
+            <div class="panel">
+                <h2 style="margin-top:0">1. Upload a CSV</h2>
+                <p>Use the CSV from data.gov.in ("Current Daily Price of Various Commodities from Various Markets") or
+                    any file with columns <code>State, District, Market, Commodity, Arrival_Date, Min_Price, Max_Price, Modal_Price</code>.</p>
+                <form class="inline" method="post" enctype="multipart/form-data" th:action="@{/import/csv}">
+                    <input type="file" name="file" accept=".csv,text/csv" required>
+                    <button type="submit">Upload &amp; import</button>
+                </form>
+                <p style="margin-bottom:0;font-size:13px">
+                    For a demo, download a <a th:href="@{/import/demo-bulletin.csv}">ready-made next-day bulletin</a>
+                    (tomato prices are up about 30% in it, so tomato alerts will fire) and upload it here.
+                </p>
+            </div>
+
+            <div class="panel">
+                <h2 style="margin-top:0">2. Pull from data.gov.in</h2>
+                <th:block th:if="${apiKeySet}">
+                    <p>API key is set. This fetches the current bulletin for <b th:text="${apiState}"></b>.</p>
+                    <form method="post" th:action="@{/import/api}">
+                        <button type="submit">Fetch now</button>
+                    </form>
+                </th:block>
+                <th:block th:unless="${apiKeySet}">
+                    <p>No API key configured. Get a free key from data.gov.in (My Account → Generate API Key), then start the app with
+                        <code>DATA_GOV_IN_KEY=your-key</code>.</p>
+                </th:block>
+                <p class="muted" style="margin-bottom:0;font-size:13px">
+                    Daily automatic import:
+                    <span th:if="${scheduled}" th:text="'on (cron ' + ${cron} + ', IST)'"></span>
+                    <span th:unless="${scheduled}">off (set <code>mandi.api.scheduled=true</code>)</span>
+                </p>
+            </div>
+        </section>
+
+        <aside class="panel">
+            <h2 style="margin-top:0">How the data flows</h2>
+            <ol style="padding-left:18px;margin:0">
+                <li>Rows come in from CSV or the API</li>
+                <li>Each row is validated and the crop name normalised</li>
+                <li>New mandis/crops are created on first sight</li>
+                <li>Prices are saved (one row per mandi, crop and day)</li>
+                <li>After saving, an event triggers the alert check</li>
+                <li>Matching farmers get an SMS</li>
+            </ol>
+        </aside>
+    </div>
+
+    <h2>Import history</h2>
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>Started</th><th>Source</th><th class="num">Read</th><th class="num">Saved</th>
+                <th class="num">Skipped</th><th class="num">SMS</th><th class="num">Time</th><th>Result</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${runs}">
+                <td th:text="${#temporals.format(r.startedAt, 'd MMM HH:mm:ss')}"></td>
+                <td th:text="${r.source}"></td>
+                <td class="num" th:text="${@inr.plain(r.rowsRead)}"></td>
+                <td class="num" th:text="${@inr.plain(r.rowsSaved)}"></td>
+                <td class="num" th:text="${r.rowsSkipped}"></td>
+                <td class="num" th:text="${r.alertsSent}"></td>
+                <td class="num" th:text="${r.durationMillis} + ' ms'"></td>
+                <td>
+                    <span class="tag" th:classappend="${r.success} ? 'on' : 'off'" th:text="${r.success} ? 'ok' : 'failed'"></span>
+                    <small class="muted" th:if="${r.note}" th:text="${r.note}"></small>
+                </td>
+            </tr>
+            <tr th:if="${runs.isEmpty()}"><td colspan="8" class="muted">No imports yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

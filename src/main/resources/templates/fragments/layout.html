@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · MandiWatch'">MandiWatch</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+<header th:fragment="nav(active)" class="topbar">
+    <div class="wrap topbar-inner">
+        <a class="brand" th:href="@{/}">Mandi<span>Watch</span></a>
+        <nav>
+            <a th:href="@{/}" th:classappend="${active == 'prices'} ? 'on'">Today's prices</a>
+            <a th:href="@{/best-mandi}" th:classappend="${active == 'best'} ? 'on'">Where to sell</a>
+            <a th:href="@{/trends}" th:classappend="${active == 'trends'} ? 'on'">Trends</a>
+            <a th:href="@{/farmers}" th:classappend="${active == 'farmers'} ? 'on'">Farmers &amp; alerts</a>
+            <a th:href="@{/notifications}" th:classappend="${active == 'sms'} ? 'on'">SMS outbox</a>
+            <a th:href="@{/import}" th:classappend="${active == 'import'} ? 'on'">Import data</a>
+            <a th:href="@{/mandis}" th:classappend="${active == 'mandis'} ? 'on'">Mandis</a>
+        </nav>
+    </div>
+</header>
+
+<div th:fragment="flash">
+    <p class="flash ok" th:if="${message}" th:text="${message}"></p>
+    <p class="flash bad" th:if="${error}" th:text="${error}"></p>
+</div>
+
+<footer th:fragment="footer" class="wrap foot">
+    Prices in ₹ per quintal (100 kg). Source: Agmarknet via data.gov.in, or sample data when offline.
+    Figures are for guidance; confirm with the mandi before travelling.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Where to sell')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('best')}"></header>
+
+<main class="wrap">
+    <h1>Where should I sell?</h1>
+    <p class="sub">Ranks nearby mandis by the money you actually take home after transport, market fee and hamali.</p>
+
+    <form class="inline panel" method="get" th:action="@{/best-mandi}">
+        <div class="field wide">
+            <label for="commodityId">Crop</label>
+            <select id="commodityId" name="commodityId" required>
+                <option value="">Choose crop</option>
+                <option th:each="c : ${commodities}" th:value="${c.id}" th:text="${c.displayName}"
+                        th:selected="${c.id == commodityId}"></option>
+            </select>
+        </div>
+        <div class="field wide">
+            <label for="villageId">Your village</label>
+            <select id="villageId" name="villageId" required>
+                <option value="">Choose village</option>
+                <option th:each="v : ${villages}" th:value="${v.id}" th:text="${v.label}"
+                        th:selected="${v.id == villageId}"></option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="quantity">Quantity (quintals)</label>
+            <input id="quantity" name="quantity" type="number" step="0.5" min="0.5" th:value="${@inr.qty(quantity)}" style="width:110px">
+        </div>
+        <div class="field">
+            <label for="rate">Transport ₹ / km / quintal</label>
+            <input id="rate" name="rate" type="number" step="0.1" min="0" th:value="${rate}" style="width:110px">
+        </div>
+        <div class="field">
+            <label for="radius">Up to (km)</label>
+            <input id="radius" name="radius" type="number" min="10" max="500" th:value="${radius}" style="width:90px">
+        </div>
+        <button type="submit">Compare mandis</button>
+    </form>
+
+    <p class="flash bad" th:if="${error}" th:text="${error}"></p>
+
+    <th:block th:if="${result != null}">
+        <p class="muted" th:if="${result.empty}">
+            No mandi within <span th:text="${radius}"></span> km has a recent <span th:text="${commodity.name}"></span> price.
+            Try a bigger distance.
+        </p>
+
+        <th:block th:unless="${result.empty}">
+            <div class="callout">
+                Best for <span th:text="${@inr.qty(quantity)}"></span> qtl <span th:text="${commodity.name}"></span>
+                from <span th:text="${village.name}"></span>:
+                <strong th:text="${result.best.mandi.name}">Mandi</strong>,
+                take-home <strong th:text="${@inr.fmt(result.best.netAmount)}">₹0</strong>
+                <th:block th:if="${result.extraOverNearest > 0}">
+                    &mdash; that's <b th:text="${@inr.fmt(result.extraOverNearest)}">₹0</b> more than selling at the
+                    nearest mandi (<span th:text="${result.nearest.mandi.name}"></span>,
+                    <span th:text="${result.nearest.roadKm}"></span> km).
+                </th:block>
+                <th:block th:if="${result.extraOverNearest == 0}">
+                    &mdash; the nearest mandi is also the best one today.
+                </th:block>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Mandi</th>
+                        <th class="num">Road km*</th>
+                        <th class="num">Price/qtl</th>
+                        <th class="num">Sale value</th>
+                        <th class="num">Transport</th>
+                        <th class="num">Market fee</th>
+                        <th class="num">Hamali</th>
+                        <th class="num">Take-home</th>
+                        <th class="num">Per qtl</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="o, s : ${result.offers}" th:classappend="${s.first} ? 'best'">
+                        <td th:text="${s.count}">1</td>
+                        <td>
+                            <span th:text="${o.mandi.name}">Mandi</span>
+                            <span class="muted" th:if="${o.priceDate != result.best.priceDate}"
+                                  th:text="'(price of ' + ${#temporals.format(o.priceDate, 'd MMM')} + ')'"></span>
+                        </td>
+                        <td class="num" th:text="${o.roadKm}">0</td>
+                        <td class="num" th:text="${@inr.plain(o.modalPrice)}">0</td>
+                        <td class="num" th:text="${@inr.plain(o.grossAmount)}">0</td>
+                        <td class="num down" th:text="'-' + ${@inr.plain(o.transportCost)}">0</td>
+                        <td class="num down" th:text="'-' + ${@inr.plain(o.marketFee)}">0</td>
+                        <td class="num down" th:text="'-' + ${@inr.plain(o.hamali)}">0</td>
+                        <td class="num"><b th:text="${@inr.fmt(o.netAmount)}">0</b></td>
+                        <td class="num" th:text="${@inr.plain(o.getNetPerQuintal(quantity))}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted" style="font-size:13px">
+                * Straight-line distance × 1.3 as an estimate of road distance.
+                Market fee uses each mandi's rate (see <a th:href="@{/mandis}">Mandis</a>); hamali is ₹<span th:text="${hamali}"></span>/qtl.
+                <th:block th:if="${result.mandisWithoutLocation > 0}">
+                    <span th:text="${result.mandisWithoutLocation}"></span> mandi(s) were left out because their location isn't set.
+                </th:block>
+            </p>
+            <p style="font-size:13px">
+                Same result as JSON:
+                <a th:href="@{/api/best-mandi(commodity=${commodity.name}, villageId=${village.id}, quantity=${quantity}, rate=${rate}, radius=${radius})}">/api/best-mandi</a>
+            </p>
+        </th:block>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

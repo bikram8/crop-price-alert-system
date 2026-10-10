@@ -1,0 +1,8 @@
+# Loaded by tests annotated with @ActiveProfiles("test"), on top of application.yml.
+spring:
+  datasource:
+    url: jdbc:h2:mem:mandiwatch-test;DB_CLOSE_DELAY=-1
+
+mandi:
+  sample:
+    days: 20

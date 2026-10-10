@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('SMS outbox')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('sms')}"></header>
+
+<main class="wrap">
+    <h1>SMS outbox</h1>
+    <p class="sub">Every alert message the system has sent. In this build SMS are printed to the console instead of a paid gateway.</p>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr><th style="width:130px">When</th><th>To</th><th>Message</th><th>Channel</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="n : ${notifications}">
+                <td th:text="${#temporals.format(n.createdAt, 'd MMM, HH:mm')}"></td>
+                <td><a th:href="@{/farmers/{id}(id=${n.farmer.id})}" th:text="${n.farmer.name}"></a><br>
+                    <small class="muted" th:text="${n.farmer.maskedPhone}"></small></td>
+                <td><span class="sms" th:text="${n.message}"></span></td>
+                <td>
+                    <span th:text="${n.channel}"></span>
+                    <span class="tag" th:classappend="${n.delivered} ? 'on' : 'off'" th:text="${n.delivered} ? 'sent' : 'failed'"></span>
+                </td>
+            </tr>
+            <tr th:if="${notifications.isEmpty()}">
+                <td colspan="4" class="muted">No messages yet. Add an alert for a farmer, then import a bulletin.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="sub" th:if="${page.totalPages > 1}">
+        <a th:if="${page.hasPrevious()}" th:href="@{/notifications(page=${page.number - 1})}">&larr; Newer</a>
+        <span th:text="|Page ${page.number + 1} of ${page.totalPages} (${page.totalElements} messages)|"></span>
+        <a th:if="${page.hasNext()}" th:href="@{/notifications(page=${page.number + 1})}">Older &rarr;</a>
+    </p>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

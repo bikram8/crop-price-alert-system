@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Farmers')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('farmers')}"></header>
+
+<main class="wrap">
+    <h1>Farmers &amp; alerts</h1>
+    <p class="sub">Register a farmer, then set the price they're waiting for. They get an SMS in their language when a bulletin matches.</p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="cols">
+        <section>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                    <tr><th>Name</th><th>Phone</th><th>Village</th><th>Language</th><th class="num">Alerts</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="f : ${farmers}">
+                        <td th:text="${f.name}">Name</td>
+                        <td th:text="${f.maskedPhone}">98XXXXXX10</td>
+                        <td th:text="${f.village.name}">Village</td>
+                        <td th:text="${f.language.label}">Telugu</td>
+                        <td class="num" th:text="${f.alerts.size()}">0</td>
+                        <td><a th:href="@{/farmers/{id}(id=${f.id})}">open</a></td>
+                    </tr>
+                    <tr th:if="${farmers.isEmpty()}">
+                        <td colspan="6" class="muted">No farmers yet. Use the form to add the first one.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="panel">
+            <h2 style="margin-top:0">Register farmer</h2>
+            <form method="post" th:action="@{/farmers}" th:object="${farmerForm}">
+                <p class="field">
+                    <label for="name">Name</label>
+                    <input id="name" th:field="*{name}" placeholder="e.g. Ramesh Goud">
+                    <span class="err" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+                </p>
+                <p class="field">
+                    <label for="phone">Mobile number</label>
+                    <input id="phone" th:field="*{phone}" maxlength="10" inputmode="numeric" placeholder="10 digits">
+                    <span class="err" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+                </p>
+                <p class="field">
+                    <label for="villageId">Village</label>
+                    <select id="villageId" th:field="*{villageId}">
+                        <option value="">Choose village</option>
+                        <option th:each="v : ${villages}" th:value="${v.id}" th:text="${v.label}"></option>
+                    </select>
+                    <span class="err" th:if="${#fields.hasErrors('villageId')}" th:errors="*{villageId}"></span>
+                </p>
+                <p class="field">
+                    <label for="language">SMS language</label>
+                    <select id="language" th:field="*{language}">
+                        <option th:each="l : ${languages}" th:value="${l}" th:text="${l.label}"></option>
+                    </select>
+                </p>
+                <button type="submit">Register</button>
+            </form>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

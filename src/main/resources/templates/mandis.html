@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Mandis')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('mandis')}"></header>
+
+<main class="wrap">
+    <h1>Mandis</h1>
+    <p class="sub">Mandis that arrive from the government feed have no location. Add latitude/longitude here so they
+        appear in "Where to sell" and in alerts.</p>
+
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr><th>Mandi</th><th>District</th><th>State</th><th>Latitude</th><th>Longitude</th><th>Fee %</th><th></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="m : ${mandis}">
+                <td>
+                    <span th:text="${m.name}"></span>
+                    <span class="tag off" th:unless="${m.hasLocation()}">no location</span>
+                </td>
+                <td th:text="${m.district}"></td>
+                <td th:text="${m.state}"></td>
+                <td><input name="latitude" type="number" step="0.0001" th:value="${m.latitude}" th:attr="form='f' + ${m.id}" style="width:100px"></td>
+                <td><input name="longitude" type="number" step="0.0001" th:value="${m.longitude}" th:attr="form='f' + ${m.id}" style="width:100px"></td>
+                <td><input name="feePercent" type="number" step="0.1" th:value="${m.feePercent}" th:attr="form='f' + ${m.id}" style="width:70px"></td>
+                <td>
+                    <form method="post" th:id="'f' + ${m.id}" th:action="@{/mandis/{id}(id=${m.id})}">
+                        <button class="btn-small" type="submit">Save</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

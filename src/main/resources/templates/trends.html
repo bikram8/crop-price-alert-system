@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Trends')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('trends')}"></header>
+
+<main class="wrap">
+    <h1>Price trends</h1>
+    <p class="sub">Is the price going up or down? Look before you decide to sell or hold.</p>
+
+    <form class="inline panel" method="get" th:action="@{/trends}">
+        <div class="field wide">
+            <label for="commodityId">Crop</label>
+            <select id="commodityId" name="commodityId">
+                <option th:each="c : ${commodities}" th:value="${c.id}" th:text="${c.displayName}"
+                        th:selected="${c.id == commodityId}"></option>
+            </select>
+        </div>
+        <div class="field wide">
+            <label for="mandiId">Mandi</label>
+            <select id="mandiId" name="mandiId">
+                <option value="">All mandis (state average)</option>
+                <option th:each="m : ${mandis}" th:value="${m.id}" th:text="${m.name + ' (' + m.district + ')'}"
+                        th:selected="${m.id == mandiId}"></option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="days">Period</label>
+            <select id="days" name="days">
+                <option th:each="d : ${allowedDays}" th:value="${d}" th:text="${d} + ' days'" th:selected="${d == days}"></option>
+            </select>
+        </div>
+        <button type="submit">Show</button>
+    </form>
+
+    <th:block th:if="${trend != null}">
+        <p class="muted" th:unless="${trend.hasData()}">
+            No <span th:text="${commodity.name}"></span> prices
+            <span th:if="${mandi}" th:text="'at ' + ${mandi.name}"></span> in this period.
+        </p>
+
+        <th:block th:if="${trend.hasData()}">
+            <div class="stats">
+                <div class="stat"><b th:text="${@inr.fmt(trend.latest)}">0</b><small>latest</small></div>
+                <div class="stat"><b th:text="${@inr.fmt(trend.lowest)}">0</b><small>lowest in period</small></div>
+                <div class="stat"><b th:text="${@inr.fmt(trend.highest)}">0</b><small>highest in period</small></div>
+                <div class="stat">
+                    <b th:classappend="${trend.weekChangePercent != null and trend.weekChangePercent > 0} ? 'up' : (${trend.weekChangePercent != null and trend.weekChangePercent < 0} ? 'down')"
+                       th:text="${trend.weekChangePercent == null ? '-' : (trend.weekChangePercent > 0 ? '+' : '') + trend.weekChangePercent + '%'}">0</b>
+                    <small th:text="'week on week · ' + ${trend.direction}">week</small>
+                </div>
+                <div class="stat" th:if="${trend.projectedIn7Days != null}">
+                    <b th:text="'~' + ${@inr.fmt(trend.projectedIn7Days)}">0</b><small>rough 7-day projection</small>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 style="margin-top:0">
+                    <span th:text="${commodity.displayName}"></span>,
+                    <span th:text="${mandi != null ? mandi.name : 'state average'}"></span>
+                </h2>
+                <div class="chart-box"><canvas id="chart"></canvas></div>
+                <p class="muted" style="font-size:12px;margin-bottom:0">
+                    The projection extends a straight line through the last 14 reports. It shows direction, not a promise.
+                </p>
+            </div>
+
+            <details class="panel">
+                <summary>Show the numbers</summary>
+                <table>
+                    <thead><tr><th>Date</th><th class="num">Modal price</th><th class="num">7-day average</th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${trend.points}">
+                        <td th:text="${#temporals.format(p.date, 'EEE d MMM')}"></td>
+                        <td class="num" th:text="${@inr.plain(p.price)}"></td>
+                        <td class="num" th:text="${p.movingAvg7 == null ? '' : @inr.plain(p.movingAvg7)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </details>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+            <script th:inline="javascript">
+                const labels = /*[[${chartLabels}]]*/ [];
+                const prices = /*[[${chartPrices}]]*/ [];
+                const averages = /*[[${chartAverages}]]*/ [];
+                if (window.Chart) {
+                    new Chart(document.getElementById('chart'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Modal price (₹/qtl)',
+                                    data: prices,
+                                    borderColor: '#1f5130',
+                                    backgroundColor: '#1f5130',
+                                    pointRadius: 2,
+                                    tension: 0.2
+                                },
+                                {
+                                    label: '7-day average',
+                                    data: averages,
+                                    borderColor: '#c98a12',
+                                    borderDash: [6, 4],
+                                    pointRadius: 0,
+                                    tension: 0.3
+                                }
+                            ]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            interaction: {mode: 'index', intersect: false},
+                            scales: {y: {ticks: {callback: v => '₹' + v.toLocaleString('en-IN')}}}
+                        }
+                    });
+                } else {
+                    document.querySelector('.chart-box').innerHTML =
+                        '<p class="muted">Chart needs internet for Chart.js. Open "Show the numbers" below.</p>';
+                }
+            </script>
+        </th:block>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

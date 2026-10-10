@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Mandi prices')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: nav('prices')}"></header>
+
+<main class="wrap">
+    <h1>Mandi prices</h1>
+    <p class="sub" th:if="${latestDate}">
+        Latest bulletin: <b th:text="${#temporals.format(latestDate, 'EEEE, d MMMM yyyy')}">date</b>
+    </p>
+    <p class="sub" th:unless="${latestDate}">No prices yet. Go to <a th:href="@{/import}">Import data</a>.</p>
+
+    <div class="stats">
+        <div class="stat"><b th:text="${@inr.plain(rowCount)}">0</b><small>price records</small></div>
+        <div class="stat"><b th:text="${mandiCount}">0</b><small>mandis</small></div>
+        <div class="stat"><b th:text="${commodities.size()}">0</b><small>crops</small></div>
+        <div class="stat"><b th:text="${farmerCount}">0</b><small>farmers registered</small></div>
+    </div>
+
+    <div class="cols">
+        <section>
+            <form class="inline panel" method="get" th:action="@{/}">
+                <div class="field wide">
+                    <label for="commodityId">Crop</label>
+                    <select id="commodityId" name="commodityId">
+                        <option value="">All crops</option>
+                        <option th:each="c : ${commodities}" th:value="${c.id}" th:text="${c.displayName}"
+                                th:selected="${c.id == selectedCommodity}"></option>
+                    </select>
+                </div>
+                <div class="field wide">
+                    <label for="district">District</label>
+                    <select id="district" name="district">
+                        <option value="">All districts</option>
+                        <option th:each="d : ${districts}" th:value="${d}" th:text="${d}"
+                                th:selected="${d == selectedDistrict}"></option>
+                    </select>
+                </div>
+                <button type="submit">Show</button>
+                <a class="btn btn-plain" th:href="@{/}">Clear</a>
+            </form>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Crop</th>
+                        <th>Mandi</th>
+                        <th>District</th>
+                        <th class="num">Min</th>
+                        <th class="num">Max</th>
+                        <th class="num">Modal</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p : ${prices}">
+                        <td th:text="${p.commodity.name}">Tomato</td>
+                        <td th:text="${p.mandi.name}">Bowenpally</td>
+                        <td th:text="${p.mandi.district}">Hyderabad</td>
+                        <td class="num" th:text="${@inr.plain(p.minPrice)}">0</td>
+                        <td class="num" th:text="${@inr.plain(p.maxPrice)}">0</td>
+                        <td class="num"><b th:text="${@inr.plain(p.modalPrice)}">0</b></td>
+                        <td><a class="btn-small" th:href="@{/trends(commodityId=${p.commodity.id}, mandiId=${p.mandi.id})}">trend</a></td>
+                    </tr>
+                    <tr th:if="${prices.isEmpty()}">
+                        <td colspan="7" class="muted">Nothing matches this filter for the latest date.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside>
+            <div class="panel">
+                <h2 style="margin-top:0">Moved most this week</h2>
+                <p class="muted" th:if="${movers.isEmpty()}">Needs at least a week of data.</p>
+                <table th:unless="${movers.isEmpty()}">
+                    <thead>
+                    <tr><th>Crop</th><th class="num">Avg now</th><th class="num">Change</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="m : ${movers}">
+                        <td><a th:href="@{/trends(commodityId=${m.commodity.id})}" th:text="${m.commodity.name}">Tomato</a></td>
+                        <td class="num" th:text="${@inr.plain(m.averageNow)}">0</td>
+                        <td class="num" th:classappend="${m.up} ? 'up' : 'down'"
+                            th:text="${(m.up ? '+' : '') + m.changePercent + '%'}">0%</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <p class="muted" style="font-size:12px;margin-bottom:0">State average modal price, latest day vs. a week earlier.</p>
+            </div>
+
+            <div class="panel">
+                <h2 style="margin-top:0">Selling soon?</h2>
+                <p>The highest price isn't always the best deal once you pay for the truck.
+                    Compare what you'd actually take home.</p>
+                <a class="btn" th:href="@{/best-mandi}">Find where to sell</a>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
